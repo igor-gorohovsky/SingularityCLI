@@ -1,0 +1,26 @@
+[package]
+name = "singularity-cli"
+version = "0.1.0"
+edition = "2024"
+description = "CLI wrapper for the Singularity task manager API"
+license = "Apache-2.0"
+repository = "https://github.com/igor-gorohovsky/SingularityCLI"
+keywords = ["cli", "task-manager", "singularity", "productivity"]
+categories = ["command-line-utilities"]
+
+[[bin]]
+name = "singularity"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+reqwest = { version = "0.12", features = ["blocking", "json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+dirs = "6"
+tabled = "0.17"
+toml = "0.8"
+anyhow = "1"
+
+[dev-dependencies]
+mockito = "1"
