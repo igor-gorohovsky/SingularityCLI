@@ -4,7 +4,22 @@
 
 A command-line interface for the [Singularity](https://singularity-app.com) task manager, built in Rust.
 
-Manage your projects, tasks, task groups, and tags directly from the terminal or through AI agent integrations.
+## Why?
+
+This CLI is built primarily for **AI agents**. Singularity offers an [MCP server](https://singularity-app.com), but MCP tool definitions, schemas, and JSON responses consume a significant chunk of the agent's context window. A CLI call like `singularity task list --project-id P-xxx` is a single line in, a compact table out — orders of magnitude fewer tokens than an equivalent MCP round-trip with its full schema overhead.
+
+Agents can discover available commands and flags via `--help` without loading any schema into context. The CLI ships with a [Claude Code skill file](.claude/skills/singularity.md) — drop it into your project and your agent can immediately manage tasks through the Singularity API.
+
+It works great for humans too, of course.
+
+### Agent Setup
+
+1. Install: `cargo install singularity-cli`
+2. Set token: `singularity config set-token <TOKEN>` (or `export SINGULARITY_TOKEN=<TOKEN>`)
+3. Copy `.claude/skills/singularity.md` to your project's `.claude/skills/` directory
+4. Your agent can now run commands like `singularity task create --title "Fix bug" --priority high`
+
+Use `--json` on any command for machine-readable output that agents can parse programmatically.
 
 ## Installation
 
@@ -120,14 +135,6 @@ Singularity uses prefixed UUIDs for entity identification:
 | Project | `P-<uuid>` | `P-a1b2c3d4-e5f6-...` |
 | Task | `T-<uuid>` | `T-f7e8d9c0-b1a2-...` |
 | Task Group | `Q-<uuid>` | `Q-1a2b3c4d-5e6f-...` |
-
-## Agent Integration
-
-This CLI is designed to work well with AI agents. It includes:
-
-- Descriptive `--help` on every command and flag
-- `--json` output for programmatic parsing
-- A [Claude Code skill file](.claude/skills/singularity.md) for seamless agent integration
 
 ## Development
 
