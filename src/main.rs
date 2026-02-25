@@ -23,7 +23,11 @@ use commands::task_group::TaskGroupCmd;
         Use --json on any command for machine-readable JSON output."
 )]
 struct Cli {
-    #[arg(long, global = true, help = "Output raw JSON instead of formatted tables")]
+    #[arg(
+        long,
+        global = true,
+        help = "Output raw JSON instead of formatted tables"
+    )]
     json: bool,
 
     #[command(subcommand)]
@@ -47,7 +51,10 @@ enum Commands {
         #[command(subcommand)]
         command: TaskCmd,
     },
-    #[command(name = "task-group", about = "Manage task groups within projects (IDs use Q-<uuid> format)")]
+    #[command(
+        name = "task-group",
+        about = "Manage task groups within projects (IDs use Q-<uuid> format)"
+    )]
     TaskGroup {
         #[command(subcommand)]
         command: TaskGroupCmd,

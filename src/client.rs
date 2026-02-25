@@ -1,6 +1,6 @@
 use anyhow::{Context, Result, bail};
-use reqwest::blocking::Client;
 use reqwest::StatusCode;
+use reqwest::blocking::Client;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 

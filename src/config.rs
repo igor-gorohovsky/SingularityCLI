@@ -11,10 +11,10 @@ fn config_path() -> Result<PathBuf> {
 }
 
 pub fn resolve_token() -> Result<String> {
-    if let Ok(token) = std::env::var(ENV_VAR) {
-        if !token.is_empty() {
-            return Ok(token);
-        }
+    if let Ok(token) = std::env::var(ENV_VAR)
+        && !token.is_empty()
+    {
+        return Ok(token);
     }
 
     let path = config_path()?;
@@ -22,10 +22,10 @@ pub fn resolve_token() -> Result<String> {
         let content = fs::read_to_string(&path)
             .with_context(|| format!("failed to read {}", path.display()))?;
         let table: toml::Table = content.parse().context("invalid config file")?;
-        if let Some(token) = table.get("token").and_then(|v| v.as_str()) {
-            if !token.is_empty() {
-                return Ok(token.to_string());
-            }
+        if let Some(token) = table.get("token").and_then(|v| v.as_str())
+            && !token.is_empty()
+        {
+            return Ok(token.to_string());
         }
     }
 

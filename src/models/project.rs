@@ -60,10 +60,10 @@ impl Project {
         if let Some(ref v) = self.end {
             println!("End:      {}", v);
         }
-        if let Some(ref v) = self.tags {
-            if !v.is_empty() {
-                println!("Tags:     {}", v.join(", "));
-            }
+        if let Some(ref v) = self.tags
+            && !v.is_empty()
+        {
+            println!("Tags:     {}", v.join(", "));
         }
         if let Some(v) = self.is_notebook {
             println!("Notebook: {}", v);

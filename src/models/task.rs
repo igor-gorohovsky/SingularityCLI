@@ -86,10 +86,10 @@ impl Task {
         if let Some(ref v) = self.deadline {
             println!("Deadline: {}", v);
         }
-        if let Some(ref v) = self.tags {
-            if !v.is_empty() {
-                println!("Tags:     {}", v.join(", "));
-            }
+        if let Some(ref v) = self.tags
+            && !v.is_empty()
+        {
+            println!("Tags:     {}", v.join(", "));
         }
     }
 }

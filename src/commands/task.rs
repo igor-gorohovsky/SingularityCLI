@@ -23,18 +23,18 @@ impl Priority {
 }
 
 #[derive(Clone, ValueEnum)]
-pub enum Checked {
+pub enum CheckedStatus {
     Empty,
     Checked,
     Cancelled,
 }
 
-impl Checked {
+impl CheckedStatus {
     fn as_i32(&self) -> i32 {
         match self {
-            Checked::Empty => 0,
-            Checked::Checked => 1,
-            Checked::Cancelled => 2,
+            CheckedStatus::Empty => 0,
+            CheckedStatus::Checked => 1,
+            CheckedStatus::Cancelled => 2,
         }
     }
 }
@@ -47,9 +47,15 @@ pub enum TaskCmd {
         project_id: Option<String>,
         #[arg(long, help = "Filter by parent task ID (T-<uuid>)")]
         parent: Option<String>,
-        #[arg(long, help = "Filter tasks starting on or after this date (ISO 8601, inclusive)")]
+        #[arg(
+            long,
+            help = "Filter tasks starting on or after this date (ISO 8601, inclusive)"
+        )]
         start_from: Option<String>,
-        #[arg(long, help = "Filter tasks starting on or before this date (ISO 8601, inclusive)")]
+        #[arg(
+            long,
+            help = "Filter tasks starting on or before this date (ISO 8601, inclusive)"
+        )]
         start_to: Option<String>,
         #[arg(long, help = "Maximum number of tasks to return (max 1000)")]
         max_count: Option<u32>,
@@ -96,8 +102,12 @@ pub enum TaskCmd {
         note: Option<String>,
         #[arg(long, value_enum, help = "New priority: high, normal, or low")]
         priority: Option<Priority>,
-        #[arg(long, value_enum, help = "Completion status: empty, checked, or cancelled")]
-        checked: Option<Checked>,
+        #[arg(
+            long,
+            value_enum,
+            help = "Completion status: empty, checked, or cancelled"
+        )]
+        checked: Option<CheckedStatus>,
         #[arg(long, help = "Move to project (P-<uuid>)")]
         project_id: Option<String>,
         #[arg(long, help = "New parent task ID (T-<uuid>)")]
@@ -108,7 +118,11 @@ pub enum TaskCmd {
         deadline: Option<String>,
         #[arg(long, help = "New start date (ISO 8601)")]
         start: Option<String>,
-        #[arg(long, value_delimiter = ',', help = "Replace tags with comma-separated tag IDs")]
+        #[arg(
+            long,
+            value_delimiter = ',',
+            help = "Replace tags with comma-separated tag IDs"
+        )]
         tags: Option<Vec<String>>,
     },
     #[command(about = "Delete a task by ID (soft-delete)")]
@@ -235,8 +249,7 @@ pub fn run(client: &ApiClient, cmd: TaskCmd, json: bool) -> Result<()> {
                 is_note: None,
             };
             if json {
-                let resp: serde_json::Value =
-                    client.patch(&format!("/v2/task/{}", id), &data)?;
+                let resp: serde_json::Value = client.patch(&format!("/v2/task/{}", id), &data)?;
                 println!("{}", serde_json::to_string_pretty(&resp)?);
             } else {
                 let task: Task = client.patch(&format!("/v2/task/{}", id), &data)?;

@@ -88,8 +88,7 @@ pub fn run(client: &ApiClient, cmd: TaskGroupCmd, json: bool) -> Result<()> {
         }
         TaskGroupCmd::Get { id } => {
             if json {
-                let resp: serde_json::Value =
-                    client.get(&format!("/v2/task-group/{}", id), &[])?;
+                let resp: serde_json::Value = client.get(&format!("/v2/task-group/{}", id), &[])?;
                 println!("{}", serde_json::to_string_pretty(&resp)?);
             } else {
                 let group: TaskGroup = client.get(&format!("/v2/task-group/{}", id), &[])?;
@@ -132,8 +131,7 @@ pub fn run(client: &ApiClient, cmd: TaskGroupCmd, json: bool) -> Result<()> {
                     client.patch(&format!("/v2/task-group/{}", id), &data)?;
                 println!("{}", serde_json::to_string_pretty(&resp)?);
             } else {
-                let group: TaskGroup =
-                    client.patch(&format!("/v2/task-group/{}", id), &data)?;
+                let group: TaskGroup = client.patch(&format!("/v2/task-group/{}", id), &data)?;
                 println!("Updated task group {}", group.id);
             }
         }
