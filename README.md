@@ -1,5 +1,7 @@
 # Singularity CLI
 
+> This entire project — every line of code, every test, this very README — was written by [Claude Code](https://claude.ai/code). No humans were mass-unemployed in the making of this CLI. Your job is safe. Probably.
+
 A command-line interface for the [Singularity](https://singularity-app.com) task manager, built in Rust.
 
 Manage your projects, tasks, task groups, and tags directly from the terminal or through AI agent integrations.
@@ -144,6 +146,3 @@ cargo fmt
 
 Apache-2.0 - see [LICENSE](LICENSE) for details.
 
----
-
-This project was fully written by [Claude Code](https://claude.ai/code) (Anthropic's AI coding agent).
