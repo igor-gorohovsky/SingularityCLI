@@ -1,44 +1,30 @@
 use serde::{Deserialize, Serialize};
-use tabled::Tabled;
 
 #[derive(Debug, Deserialize)]
 pub struct TaskListResponse {
     pub tasks: Vec<Task>,
 }
 
-#[derive(Debug, Deserialize, Tabled)]
-#[tabled(rename_all = "UPPERCASE")]
+#[derive(Debug, Deserialize)]
 pub struct Task {
     pub id: String,
     pub title: String,
-    #[tabled(display_with = "display_priority")]
     pub priority: Option<i32>,
-    #[tabled(display_with = "display_checked")]
     pub checked: Option<i32>,
-    #[tabled(skip)]
     pub note: Option<String>,
-    #[tabled(skip)]
     #[serde(rename = "projectId")]
     pub project_id: Option<String>,
-    #[tabled(skip)]
     pub parent: Option<String>,
-    #[tabled(skip)]
     pub group: Option<String>,
-    #[tabled(skip)]
     pub start: Option<String>,
-    #[tabled(skip)]
     pub deadline: Option<String>,
-    #[tabled(skip)]
     pub tags: Option<Vec<String>>,
-    #[tabled(skip)]
     #[serde(rename = "showInBasket")]
     #[allow(dead_code)]
     pub show_in_basket: Option<bool>,
-    #[tabled(skip)]
     #[serde(rename = "modificatedDate")]
     #[allow(dead_code)]
     pub modificated_date: Option<String>,
-    #[tabled(skip)]
     #[serde(rename = "isNote")]
     #[allow(dead_code)]
     pub is_note: Option<bool>,
@@ -63,34 +49,47 @@ fn display_checked(c: &Option<i32>) -> String {
 }
 
 impl Task {
-    pub fn display_detail(&self) {
-        println!("ID:       {}", self.id);
-        println!("Title:    {}", self.title);
-        println!("Priority: {}", display_priority(&self.priority));
-        println!("Checked:  {}", display_checked(&self.checked));
+    pub fn display_detail(&self) -> String {
+        let mut lines = vec![
+            format!("**ID:** {}", self.id),
+            format!("**Title:** {}", self.title),
+            format!("**Priority:** {}", display_priority(&self.priority)),
+            format!("**Checked:** {}", display_checked(&self.checked)),
+        ];
         if let Some(ref v) = self.note {
-            println!("Note:     {}", v);
+            lines.push(format!("**Note:** {}", v));
         }
         if let Some(ref v) = self.project_id {
-            println!("Project:  {}", v);
+            lines.push(format!("**Project:** {}", v));
         }
         if let Some(ref v) = self.parent {
-            println!("Parent:   {}", v);
+            lines.push(format!("**Parent:** {}", v));
         }
         if let Some(ref v) = self.group {
-            println!("Group:    {}", v);
+            lines.push(format!("**Group:** {}", v));
         }
         if let Some(ref v) = self.start {
-            println!("Start:    {}", v);
+            lines.push(format!("**Start:** {}", v));
         }
         if let Some(ref v) = self.deadline {
-            println!("Deadline: {}", v);
+            lines.push(format!("**Deadline:** {}", v));
         }
         if let Some(ref v) = self.tags
             && !v.is_empty()
         {
-            println!("Tags:     {}", v.join(", "));
+            lines.push(format!("**Tags:** {}", v.join(", ")));
         }
+        lines.join("\n")
+    }
+
+    pub fn display_list_item(&self) -> String {
+        format!(
+            "- ID: {}\n  Task: {}\n  Priority: {}\n  Checked: {}",
+            self.id,
+            self.title,
+            display_priority(&self.priority),
+            display_checked(&self.checked),
+        )
     }
 }
 

@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use tabled::Tabled;
 
 fn display_opt(o: &Option<String>) -> String {
     o.as_deref().unwrap_or("-").to_string()
@@ -10,31 +9,34 @@ pub struct TagListResponse {
     pub tags: Vec<Tag>,
 }
 
-#[derive(Debug, Deserialize, Tabled)]
-#[tabled(rename_all = "UPPERCASE")]
+#[derive(Debug, Deserialize)]
 pub struct Tag {
     pub id: String,
     pub title: String,
-    #[tabled(display_with = "display_opt")]
     pub parent: Option<String>,
-    #[tabled(skip)]
     pub order: Option<f64>,
-    #[tabled(skip)]
     #[serde(rename = "modificatedDate")]
     #[allow(dead_code)]
     pub modificated_date: Option<String>,
 }
 
 impl Tag {
-    pub fn display_detail(&self) {
-        println!("ID:     {}", self.id);
-        println!("Title:  {}", self.title);
+    pub fn display_detail(&self) -> String {
+        let mut lines = vec![
+            format!("**ID:** {}", self.id),
+            format!("**Title:** {}", self.title),
+        ];
         if let Some(ref v) = self.parent {
-            println!("Parent: {}", v);
+            lines.push(format!("**Parent:** {}", v));
         }
         if let Some(v) = self.order {
-            println!("Order:  {}", v);
+            lines.push(format!("**Order:** {}", v));
         }
+        lines.join("\n")
+    }
+
+    pub fn display_list_item(&self) -> String {
+        format!("- ID: {}\n  Tag: {}\n  Parent: {}", self.id, self.title, display_opt(&self.parent))
     }
 }
 

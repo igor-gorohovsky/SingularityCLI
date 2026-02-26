@@ -1,6 +1,5 @@
 use anyhow::Result;
 use clap::{Subcommand, ValueEnum};
-use tabled::Table;
 
 use crate::client::ApiClient;
 use crate::models::task::{Task, TaskCreate, TaskListResponse, TaskUpdate};
@@ -178,7 +177,9 @@ pub fn run(client: &ApiClient, cmd: TaskCmd, json: bool) -> Result<()> {
                 if resp.tasks.is_empty() {
                     println!("No tasks found.");
                 } else {
-                    println!("{}", Table::new(&resp.tasks));
+                    for t in &resp.tasks {
+                        println!("{}\n", t.display_list_item());
+                    }
                 }
             }
         }
@@ -188,7 +189,7 @@ pub fn run(client: &ApiClient, cmd: TaskCmd, json: bool) -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&resp)?);
             } else {
                 let task: Task = client.get(&format!("/v2/task/{}", id), &[])?;
-                task.display_detail();
+                println!("{}", task.display_detail());
             }
         }
         TaskCmd::Create {

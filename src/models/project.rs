@@ -1,73 +1,68 @@
 use serde::{Deserialize, Serialize};
-use tabled::Tabled;
 
 #[derive(Debug, Deserialize)]
 pub struct ProjectListResponse {
     pub projects: Vec<Project>,
 }
 
-#[derive(Debug, Deserialize, Tabled)]
-#[tabled(rename_all = "UPPERCASE")]
+#[derive(Debug, Deserialize)]
 pub struct Project {
     pub id: String,
     pub title: String,
-    #[tabled(skip)]
     pub note: Option<String>,
-    #[tabled(skip)]
     pub start: Option<String>,
-    #[tabled(skip)]
     pub end: Option<String>,
-    #[tabled(skip)]
     pub emoji: Option<String>,
-    #[tabled(skip)]
     pub color: Option<String>,
-    #[tabled(skip)]
     pub parent: Option<String>,
-    #[tabled(skip)]
     #[serde(rename = "parentOrder")]
     #[allow(dead_code)]
     pub parent_order: Option<f64>,
-    #[tabled(skip)]
     #[serde(rename = "isNotebook")]
     pub is_notebook: Option<bool>,
-    #[tabled(skip)]
     pub tags: Option<Vec<String>>,
-    #[tabled(skip)]
     #[serde(rename = "modificatedDate")]
     #[allow(dead_code)]
     pub modificated_date: Option<String>,
 }
 
 impl Project {
-    pub fn display_detail(&self) {
-        println!("ID:       {}", self.id);
-        println!("Title:    {}", self.title);
+    pub fn display_detail(&self) -> String {
+        let mut lines = vec![
+            format!("**ID:** {}", self.id),
+            format!("**Title:** {}", self.title),
+        ];
         if let Some(ref v) = self.note {
-            println!("Note:     {}", v);
+            lines.push(format!("**Note:** {}", v));
         }
         if let Some(ref v) = self.parent {
-            println!("Parent:   {}", v);
+            lines.push(format!("**Parent:** {}", v));
         }
         if let Some(ref v) = self.emoji {
-            println!("Emoji:    {}", v);
+            lines.push(format!("**Emoji:** {}", v));
         }
         if let Some(ref v) = self.color {
-            println!("Color:    {}", v);
+            lines.push(format!("**Color:** {}", v));
         }
         if let Some(ref v) = self.start {
-            println!("Start:    {}", v);
+            lines.push(format!("**Start:** {}", v));
         }
         if let Some(ref v) = self.end {
-            println!("End:      {}", v);
+            lines.push(format!("**End:** {}", v));
         }
         if let Some(ref v) = self.tags
             && !v.is_empty()
         {
-            println!("Tags:     {}", v.join(", "));
+            lines.push(format!("**Tags:** {}", v.join(", ")));
         }
         if let Some(v) = self.is_notebook {
-            println!("Notebook: {}", v);
+            lines.push(format!("**Notebook:** {}", v));
         }
+        lines.join("\n")
+    }
+
+    pub fn display_list_item(&self) -> String {
+        format!("- ID: {}\n  Project: {}", self.id, self.title)
     }
 }
 

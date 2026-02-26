@@ -1,6 +1,5 @@
 use anyhow::Result;
 use clap::Subcommand;
-use tabled::Table;
 
 use crate::client::ApiClient;
 use crate::models::tag::{Tag, TagCreate, TagListResponse, TagUpdate};
@@ -80,7 +79,9 @@ pub fn run(client: &ApiClient, cmd: TagCmd, json: bool) -> Result<()> {
                 if resp.tags.is_empty() {
                     println!("No tags found.");
                 } else {
-                    println!("{}", Table::new(&resp.tags));
+                    for t in &resp.tags {
+                        println!("{}\n", t.display_list_item());
+                    }
                 }
             }
         }
@@ -90,7 +91,7 @@ pub fn run(client: &ApiClient, cmd: TagCmd, json: bool) -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&resp)?);
             } else {
                 let tag: Tag = client.get(&format!("/v2/tag/{}", id), &[])?;
-                tag.display_detail();
+                println!("{}", tag.display_detail());
             }
         }
         TagCmd::Create {

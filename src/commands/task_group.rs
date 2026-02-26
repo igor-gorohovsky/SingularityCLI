@@ -1,6 +1,5 @@
 use anyhow::Result;
 use clap::Subcommand;
-use tabled::Table;
 
 use crate::client::ApiClient;
 use crate::models::task_group::{
@@ -82,7 +81,9 @@ pub fn run(client: &ApiClient, cmd: TaskGroupCmd, json: bool) -> Result<()> {
                 if resp.task_groups.is_empty() {
                     println!("No task groups found.");
                 } else {
-                    println!("{}", Table::new(&resp.task_groups));
+                    for g in &resp.task_groups {
+                        println!("{}\n", g.display_list_item());
+                    }
                 }
             }
         }
@@ -92,7 +93,7 @@ pub fn run(client: &ApiClient, cmd: TaskGroupCmd, json: bool) -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&resp)?);
             } else {
                 let group: TaskGroup = client.get(&format!("/v2/task-group/{}", id), &[])?;
-                group.display_detail();
+                println!("{}", group.display_detail());
             }
         }
         TaskGroupCmd::Create {

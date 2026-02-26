@@ -108,16 +108,17 @@ singularity tag delete <tag-id>
 
 ## Output Formats
 
-By default, list commands output a formatted table:
+By default, list commands output markdown-style bullets:
 
 ```
-+---------+-------------------+----------+---------+
-| ID      | TITLE             | PRIORITY | CHECKED |
-+---------+-------------------+----------+---------+
-| T-abc.. | Review PR         | high     | empty   |
-+---------+-------------------+----------+---------+
-| T-def.. | Write tests       | normal   | checked |
-+---------+-------------------+----------+---------+
+- ID: T-abc
+  Task: Review PR
+  Priority: high
+  Checked: empty
+- ID: T-def
+  Task: Write tests
+  Priority: normal
+  Checked: checked
 ```
 
 Use `--json` on any command for machine-readable JSON output:

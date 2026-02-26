@@ -1,6 +1,5 @@
 use anyhow::Result;
 use clap::Subcommand;
-use tabled::Table;
 
 use crate::client::ApiClient;
 use crate::models::project::{Project, ProjectCreate, ProjectListResponse, ProjectUpdate};
@@ -100,7 +99,9 @@ pub fn run(client: &ApiClient, cmd: ProjectCmd, json: bool) -> Result<()> {
                 if resp.projects.is_empty() {
                     println!("No projects found.");
                 } else {
-                    println!("{}", Table::new(&resp.projects));
+                    for p in &resp.projects {
+                        println!("{}\n", p.display_list_item());
+                    }
                 }
             }
         }
@@ -110,7 +111,7 @@ pub fn run(client: &ApiClient, cmd: ProjectCmd, json: bool) -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&resp)?);
             } else {
                 let project: Project = client.get(&format!("/v2/project/{}", id), &[])?;
-                project.display_detail();
+                println!("{}", project.display_detail());
             }
         }
         ProjectCmd::Create {

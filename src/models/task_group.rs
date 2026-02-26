@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use tabled::Tabled;
 
 fn display_opt(o: &Option<String>) -> String {
     o.as_deref().unwrap_or("-").to_string()
@@ -11,37 +10,39 @@ pub struct TaskGroupListResponse {
     pub task_groups: Vec<TaskGroup>,
 }
 
-#[derive(Debug, Deserialize, Tabled)]
-#[tabled(rename_all = "UPPERCASE")]
+#[derive(Debug, Deserialize)]
 pub struct TaskGroup {
     pub id: String,
     pub title: String,
-    #[tabled(display_with = "display_opt")]
     pub parent: Option<String>,
-    #[tabled(skip)]
     #[serde(rename = "parentOrder")]
     pub parent_order: Option<f64>,
-    #[tabled(skip)]
     pub fake: Option<bool>,
-    #[tabled(skip)]
     #[serde(rename = "modificatedDate")]
     #[allow(dead_code)]
     pub modificated_date: Option<String>,
 }
 
 impl TaskGroup {
-    pub fn display_detail(&self) {
-        println!("ID:     {}", self.id);
-        println!("Title:  {}", self.title);
+    pub fn display_detail(&self) -> String {
+        let mut lines = vec![
+            format!("**ID:** {}", self.id),
+            format!("**Title:** {}", self.title),
+        ];
         if let Some(ref v) = self.parent {
-            println!("Parent: {}", v);
+            lines.push(format!("**Parent:** {}", v));
         }
         if let Some(v) = self.parent_order {
-            println!("Order:  {}", v);
+            lines.push(format!("**Order:** {}", v));
         }
         if let Some(v) = self.fake {
-            println!("Fake:   {}", v);
+            lines.push(format!("**Fake:** {}", v));
         }
+        lines.join("\n")
+    }
+
+    pub fn display_list_item(&self) -> String {
+        format!("- ID: {}\n  Group: {}\n  Parent: {}", self.id, self.title, display_opt(&self.parent))
     }
 }
 
