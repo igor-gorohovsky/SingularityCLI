@@ -42,7 +42,12 @@ impl TaskGroup {
     }
 
     pub fn display_list_item(&self) -> String {
-        format!("- ID: {}\n  Group: {}\n  Parent: {}", self.id, self.title, display_opt(&self.parent))
+        format!(
+            "- ID: {}\n  Group: {}\n  Parent: {}",
+            self.id,
+            self.title,
+            display_opt(&self.parent)
+        )
     }
 }
 

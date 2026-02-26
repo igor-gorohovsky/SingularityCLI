@@ -36,7 +36,12 @@ impl Tag {
     }
 
     pub fn display_list_item(&self) -> String {
-        format!("- ID: {}\n  Tag: {}\n  Parent: {}", self.id, self.title, display_opt(&self.parent))
+        format!(
+            "- ID: {}\n  Tag: {}\n  Parent: {}",
+            self.id,
+            self.title,
+            display_opt(&self.parent)
+        )
     }
 }
 

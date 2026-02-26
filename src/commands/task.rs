@@ -180,10 +180,8 @@ pub fn run(client: &ApiClient, cmd: TaskCmd, json: bool) -> Result<()> {
                     println!("No tasks found.");
                 } else {
                     for t in &resp.tasks {
-                        let checklist: ChecklistItemListResponse = client.get(
-                            "/v2/checklist-item",
-                            &[("parent", t.id.clone())],
-                        )?;
+                        let checklist: ChecklistItemListResponse =
+                            client.get("/v2/checklist-item", &[("parent", t.id.clone())])?;
                         println!("{}\n", t.display_list_item(&checklist.checklist_items));
                     }
                 }
@@ -195,10 +193,8 @@ pub fn run(client: &ApiClient, cmd: TaskCmd, json: bool) -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&resp)?);
             } else {
                 let task: Task = client.get(&format!("/v2/task/{}", id), &[])?;
-                let checklist: ChecklistItemListResponse = client.get(
-                    "/v2/checklist-item",
-                    &[("parent", task.id.clone())],
-                )?;
+                let checklist: ChecklistItemListResponse =
+                    client.get("/v2/checklist-item", &[("parent", task.id.clone())])?;
                 println!("{}", task.display_detail(&checklist.checklist_items));
             }
         }

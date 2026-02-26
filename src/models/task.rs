@@ -131,8 +131,14 @@ impl Task {
         if let Some(ref v) = self.deadline {
             lines.push(format!("**Deadline:** {}", format_date(v)));
         }
-        lines.push(format!("**Completed:** {}", display_completed(&self.checked)));
-        lines.push(format!("**Priority:** {}", display_priority(&self.priority)));
+        lines.push(format!(
+            "**Completed:** {}",
+            display_completed(&self.checked)
+        ));
+        lines.push(format!(
+            "**Priority:** {}",
+            display_priority(&self.priority)
+        ));
         if let Some(ref v) = self.project_id {
             lines.push(format!("**Project:** {}", v));
         }
