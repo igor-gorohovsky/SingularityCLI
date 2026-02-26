@@ -402,6 +402,7 @@ Values: `0`, `1`, `2`, `3`
 | Task Group | Q- | `Q-1a2b3c4d-5e6f-...` |
 | Kanban Status | KS- | `KS-abcd1234-...` |
 | Kanban Task Status | KTS- | `KTS-abcd1234-...` |
+| Checklist Item | CH- | `CH-033c36d1-bab5-...` |
 
 ---
 
@@ -694,13 +695,12 @@ All fields optional: `title`, `description`, `color`, `order`, `status`, `extern
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| id | string | yes | Item ID |
+| id | string | yes | Item ID (CH-uuid) |
 | title | string | yes | Title |
 | parent | string | yes | Parent entity ID |
-| checked | boolean | yes | Checked status |
-| order | number | yes | Display order |
+| done | boolean | yes | Completion status |
+| parentOrder | number | yes | Display order within parent |
 | modificatedDate | string | yes | Modification date |
-| removed | boolean | yes | Deletion flag |
 | modificated | object | no | Modification details |
 
 ### ChecklistItemCreateDto
@@ -709,12 +709,12 @@ All fields optional: `title`, `description`, `color`, `order`, `status`, `extern
 |-------|------|----------|-------------|
 | title | string | **yes** | Title |
 | parent | string | **yes** | Parent entity ID |
-| checked | boolean | no | Checked (default false) |
-| order | number | no | Display order |
+| done | boolean | no | Completion status (default false) |
+| parentOrder | number | no | Display order within parent |
 
 ### ChecklistItemUpdateDto
 
-All fields optional: `title`, `checked`, `order`.
+All fields optional: `title`, `done`, `parentOrder`.
 
 ---
 

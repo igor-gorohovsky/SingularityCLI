@@ -2,7 +2,9 @@ use anyhow::Result;
 use clap::{Subcommand, ValueEnum};
 
 use crate::client::ApiClient;
-use crate::models::task::{Task, TaskCreate, TaskListResponse, TaskUpdate};
+use crate::models::task::{
+    ChecklistItemListResponse, Task, TaskCreate, TaskListResponse, TaskUpdate,
+};
 
 #[derive(Clone, ValueEnum)]
 pub enum Priority {
@@ -178,7 +180,11 @@ pub fn run(client: &ApiClient, cmd: TaskCmd, json: bool) -> Result<()> {
                     println!("No tasks found.");
                 } else {
                     for t in &resp.tasks {
-                        println!("{}\n", t.display_list_item());
+                        let checklist: ChecklistItemListResponse = client.get(
+                            "/v2/checklist-item",
+                            &[("parent", t.id.clone())],
+                        )?;
+                        println!("{}\n", t.display_list_item(&checklist.checklist_items));
                     }
                 }
             }
@@ -189,7 +195,11 @@ pub fn run(client: &ApiClient, cmd: TaskCmd, json: bool) -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&resp)?);
             } else {
                 let task: Task = client.get(&format!("/v2/task/{}", id), &[])?;
-                println!("{}", task.display_detail());
+                let checklist: ChecklistItemListResponse = client.get(
+                    "/v2/checklist-item",
+                    &[("parent", task.id.clone())],
+                )?;
+                println!("{}", task.display_detail(&checklist.checklist_items));
             }
         }
         TaskCmd::Create {
