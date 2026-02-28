@@ -1,4 +1,7 @@
+use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
+
+use crate::models::task::format_date;
 
 #[derive(Debug, Deserialize)]
 pub struct ProjectListResponse {
@@ -27,7 +30,7 @@ pub struct Project {
 }
 
 impl Project {
-    pub fn display_detail(&self) -> String {
+    pub fn display_detail(&self, tz: Option<Tz>) -> String {
         let mut lines = vec![
             format!("**ID:** {}", self.id),
             format!("**Title:** {}", self.title),
@@ -45,10 +48,10 @@ impl Project {
             lines.push(format!("**Color:** {}", v));
         }
         if let Some(ref v) = self.start {
-            lines.push(format!("**Start:** {}", v));
+            lines.push(format!("**Start:** {}", format_date(v, tz)));
         }
         if let Some(ref v) = self.end {
-            lines.push(format!("**End:** {}", v));
+            lines.push(format!("**End:** {}", format_date(v, tz)));
         }
         if let Some(ref v) = self.tags
             && !v.is_empty()

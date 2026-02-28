@@ -9,7 +9,7 @@ src/
 ├── main.rs              # Entry point, top-level clap CLI definition
 ├── lib.rs               # Library crate re-exports for integration tests
 ├── client.rs            # HTTP client (reqwest blocking, bearer auth)
-├── config.rs            # Token resolution (env var > config file)
+├── config.rs            # Config management (token, timezone resolution)
 ├── models/              # Serde DTOs (response, create, update per resource)
 │   ├── project.rs
 │   ├── task.rs
@@ -17,6 +17,7 @@ src/
 │   └── tag.rs
 └── commands/            # Clap subcommand enums + run() handlers
     ├── config.rs
+    ├── setup.rs
     ├── project.rs
     ├── task.rs
     ├── task_group.rs
@@ -45,6 +46,8 @@ cargo clippy -D warnings # Lint
 
 Projects (`P-<uuid>`), Tasks (`T-<uuid>`), Task Groups (`Q-<uuid>`), Tags — each with full CRUD.
 
-## Auth
+## Auth & Config
 
 Token from `SINGULARITY_TOKEN` env var or `~/.config/singularity/config.toml`.
+
+Config file also stores `timezone` (IANA format, e.g. `Europe/Kyiv`). Used to convert date filters from local time to UTC before querying the API, and to display API dates in local time. Run `singularity setup` for interactive configuration.

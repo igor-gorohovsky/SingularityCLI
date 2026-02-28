@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono_tz::Tz;
 use clap::Subcommand;
 
 use crate::client::ApiClient;
@@ -69,7 +70,7 @@ pub enum ProjectCmd {
     },
 }
 
-pub fn run(client: &ApiClient, cmd: ProjectCmd, json: bool) -> Result<()> {
+pub fn run(client: &ApiClient, cmd: ProjectCmd, json: bool, tz: Option<Tz>) -> Result<()> {
     match cmd {
         ProjectCmd::List {
             max_count,
@@ -111,7 +112,7 @@ pub fn run(client: &ApiClient, cmd: ProjectCmd, json: bool) -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&resp)?);
             } else {
                 let project: Project = client.get(&format!("/v2/project/{}", id), &[])?;
-                println!("{}", project.display_detail());
+                println!("{}", project.display_detail(tz));
             }
         }
         ProjectCmd::Create {

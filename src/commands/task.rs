@@ -1,9 +1,10 @@
 use anyhow::Result;
+use chrono_tz::Tz;
 use clap::{Subcommand, ValueEnum};
 
 use crate::client::ApiClient;
 use crate::models::task::{
-    ChecklistItemListResponse, Task, TaskCreate, TaskListResponse, TaskUpdate,
+    ChecklistItemListResponse, Task, TaskCreate, TaskListResponse, TaskUpdate, convert_date_filter,
 };
 
 #[derive(Clone, ValueEnum)]
@@ -133,7 +134,7 @@ pub enum TaskCmd {
     },
 }
 
-pub fn run(client: &ApiClient, cmd: TaskCmd, json: bool) -> Result<()> {
+pub fn run(client: &ApiClient, cmd: TaskCmd, json: bool, tz: Option<Tz>) -> Result<()> {
     match cmd {
         TaskCmd::List {
             project_id,
@@ -153,10 +154,10 @@ pub fn run(client: &ApiClient, cmd: TaskCmd, json: bool) -> Result<()> {
                 query.push(("parent", v.to_string()));
             }
             if let Some(ref v) = start_from {
-                query.push(("startDateFrom", v.to_string()));
+                query.push(("startDateFrom", convert_date_filter(v, false, tz)?));
             }
             if let Some(ref v) = start_to {
-                query.push(("startDateTo", v.to_string()));
+                query.push(("startDateTo", convert_date_filter(v, true, tz)?));
             }
             if let Some(v) = max_count {
                 query.push(("maxCount", v.to_string()));
@@ -182,7 +183,7 @@ pub fn run(client: &ApiClient, cmd: TaskCmd, json: bool) -> Result<()> {
                     for t in &resp.tasks {
                         let checklist: ChecklistItemListResponse =
                             client.get("/v2/checklist-item", &[("parent", t.id.clone())])?;
-                        println!("{}\n", t.display_list_item(&checklist.checklist_items));
+                        println!("{}\n", t.display_list_item(&checklist.checklist_items, tz));
                     }
                 }
             }
@@ -195,7 +196,7 @@ pub fn run(client: &ApiClient, cmd: TaskCmd, json: bool) -> Result<()> {
                 let task: Task = client.get(&format!("/v2/task/{}", id), &[])?;
                 let checklist: ChecklistItemListResponse =
                     client.get("/v2/checklist-item", &[("parent", task.id.clone())])?;
-                println!("{}", task.display_detail(&checklist.checklist_items));
+                println!("{}", task.display_detail(&checklist.checklist_items, tz));
             }
         }
         TaskCmd::Create {

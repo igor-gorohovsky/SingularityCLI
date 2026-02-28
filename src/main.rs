@@ -36,7 +36,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    #[command(about = "Manage CLI configuration (API token)")]
+    #[command(about = "Interactive setup wizard for API token and timezone")]
+    Setup,
+    #[command(about = "Manage CLI configuration (API token, timezone)")]
     Config {
         #[command(subcommand)]
         command: ConfigCmd,
@@ -71,14 +73,17 @@ fn main() -> Result<()> {
     let json = cli.json;
 
     match cli.command {
+        Commands::Setup => commands::setup::run()?,
         Commands::Config { command } => commands::config::run(command)?,
         Commands::Project { command } => {
-            let client = ApiClient::new(config::resolve_token()?);
-            commands::project::run(&client, command, json)?;
+            let (token, tz) = config::resolve_token_and_timezone()?;
+            let client = ApiClient::new(token);
+            commands::project::run(&client, command, json, tz)?;
         }
         Commands::Task { command } => {
-            let client = ApiClient::new(config::resolve_token()?);
-            commands::task::run(&client, command, json)?;
+            let (token, tz) = config::resolve_token_and_timezone()?;
+            let client = ApiClient::new(token);
+            commands::task::run(&client, command, json, tz)?;
         }
         Commands::TaskGroup { command } => {
             let client = ApiClient::new(config::resolve_token()?);

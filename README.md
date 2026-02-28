@@ -15,7 +15,7 @@ It works great for humans too, of course.
 ### Agent Setup
 
 1. Install: `cargo install singularity-cli`
-2. Set token: `singularity config set-token <TOKEN>` (or `export SINGULARITY_TOKEN=<TOKEN>`)
+2. Run `singularity setup` to configure API token and timezone (or `singularity config set-token <TOKEN>` + `singularity config set-timezone Europe/Kyiv`)
 3. Copy `.claude/skills/singularity.md` to your project's `.claude/skills/` directory
 4. Your agent can now run commands like `singularity task create --title "Fix bug" --priority high`
 
@@ -39,8 +39,8 @@ cargo build --release
 ## Quick Start
 
 ```bash
-# Set your API token (get it from the Singularity app)
-singularity config set-token <YOUR_TOKEN>
+# Interactive setup (API token + timezone)
+singularity setup
 
 # List your projects
 singularity project list
@@ -51,11 +51,15 @@ singularity task create --title "Review PR" --priority high --project-id P-xxx
 # Complete a task
 singularity task update T-xxx --checked checked
 
-# Get today's tasks
-singularity task list --start-from 2026-01-01T00:00:00.000Z --start-to 2026-01-01T23:59:59.999Z
+# Get today's tasks (uses your configured timezone for correct date boundaries)
+singularity task list --start-from 2026-01-01 --start-to 2026-01-01
 ```
 
-## Authentication
+## Configuration
+
+Run `singularity setup` for interactive configuration of API token and timezone.
+
+### Authentication
 
 Two options, env var takes precedence:
 
@@ -63,6 +67,16 @@ Two options, env var takes precedence:
 |--------|---------|
 | Config file | `singularity config set-token <TOKEN>` saves to `~/.config/singularity/config.toml` |
 | Environment variable | `export SINGULARITY_TOKEN=<TOKEN>` |
+
+### Timezone
+
+The API stores all dates in UTC. Configure your timezone so the CLI correctly converts date filters and displays:
+
+```bash
+singularity config set-timezone Europe/Kyiv
+```
+
+Without a timezone configured, dates are treated as UTC. With a timezone, bare date filters like `--start-from 2026-02-28` are converted to the correct UTC boundaries for your local time.
 
 ## Commands
 

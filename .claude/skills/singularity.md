@@ -2,13 +2,22 @@
 
 CLI wrapper for the Singularity task manager API. Use it to manage projects, tasks, task groups, and tags.
 
-## Authentication
+## Setup
 
-Set the API token once:
+Run interactive setup to configure API token and timezone:
+```bash
+singularity setup
+```
+
+Or configure individually:
 ```bash
 singularity config set-token <TOKEN>
+singularity config set-timezone Europe/Kyiv
 ```
+
 Token is stored in `~/.config/singularity/config.toml`. Alternatively set the `SINGULARITY_TOKEN` env var (takes precedence over config file).
+
+Timezone (IANA format) ensures date filters and display use correct local time instead of UTC. Without it, dates are treated as UTC.
 
 ## ID Formats
 

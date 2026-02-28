@@ -1,4 +1,5 @@
-use chrono::NaiveDateTime;
+use chrono::{NaiveDate, NaiveDateTime, TimeZone, Utc};
+use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
@@ -75,38 +76,87 @@ fn parse_datetime(iso: &str) -> Option<NaiveDateTime> {
         .ok()
 }
 
-fn format_date(iso: &str) -> String {
+fn format_in_tz(naive: NaiveDateTime, tz: Option<Tz>, fmt: &str) -> String {
+    match tz {
+        Some(tz) => Utc
+            .from_utc_datetime(&naive)
+            .with_timezone(&tz)
+            .format(fmt)
+            .to_string(),
+        None => naive.format(fmt).to_string(),
+    }
+}
+
+pub(crate) fn format_date(iso: &str, tz: Option<Tz>) -> String {
     parse_datetime(iso)
-        .map(|dt| dt.format("%a, %b %d, %Y").to_string())
+        .map(|dt| format_in_tz(dt, tz, "%a, %b %d, %Y"))
         .unwrap_or_else(|| iso.to_string())
 }
 
-fn format_duration(iso: &str, use_time: Option<bool>, time_length: Option<i64>) -> String {
-    match use_time {
-        Some(true) => {
-            let start_time = parse_datetime(iso)
-                .map(|dt| dt.format("%H:%M").to_string())
-                .unwrap_or_else(|| iso.to_string());
-            match time_length {
-                Some(minutes) if minutes > 0 => {
-                    let end = parse_datetime(iso)
-                        .map(|dt| {
-                            (dt + chrono::Duration::minutes(minutes))
-                                .format("%H:%M")
-                                .to_string()
-                        })
-                        .unwrap_or_else(|| "...".to_string());
-                    format!("{} - {}", start_time, end)
+fn format_duration(
+    iso: &str,
+    use_time: Option<bool>,
+    time_length: Option<i64>,
+    tz: Option<Tz>,
+) -> String {
+    if use_time != Some(true) {
+        return "All Day".to_string();
+    }
+    let parsed = match parse_datetime(iso) {
+        Some(dt) => dt,
+        None => return iso.to_string(),
+    };
+    let start_time = format_in_tz(parsed, tz, "%H:%M");
+    match time_length {
+        Some(minutes) if minutes > 0 => {
+            let end_dt = match tz {
+                Some(tz) => {
+                    let local = Utc.from_utc_datetime(&parsed).with_timezone(&tz);
+                    (local + chrono::Duration::minutes(minutes))
+                        .format("%H:%M")
+                        .to_string()
                 }
-                _ => format!("{} - ...", start_time),
-            }
+                None => (parsed + chrono::Duration::minutes(minutes))
+                    .format("%H:%M")
+                    .to_string(),
+            };
+            format!("{} - {}", start_time, end_dt)
         }
-        _ => "All Day".to_string(),
+        _ => format!("{} - ...", start_time),
+    }
+}
+
+pub fn convert_date_filter(value: &str, is_end: bool, tz: Option<Tz>) -> anyhow::Result<String> {
+    if value.contains('T') {
+        return Ok(value.to_string());
+    }
+    let naive_date = NaiveDate::parse_from_str(value, "%Y-%m-%d")
+        .map_err(|e| anyhow::anyhow!("invalid date '{}': {}", value, e))?;
+    let naive_dt = if is_end {
+        naive_date.and_hms_opt(23, 59, 59).unwrap()
+    } else {
+        naive_date.and_hms_opt(0, 0, 0).unwrap()
+    };
+    match tz {
+        Some(tz) => {
+            let local_dt = tz.from_local_datetime(&naive_dt).single().ok_or_else(|| {
+                anyhow::anyhow!("ambiguous or invalid local time for date '{}'", value)
+            })?;
+            Ok(local_dt
+                .with_timezone(&Utc)
+                .format("%Y-%m-%dT%H:%M:%SZ")
+                .to_string())
+        }
+        None => Ok(format!(
+            "{}T{}Z",
+            value,
+            if is_end { "23:59:59" } else { "00:00:00" }
+        )),
     }
 }
 
 impl Task {
-    pub fn display_detail(&self, checklist: &[ChecklistItem]) -> String {
+    pub fn display_detail(&self, checklist: &[ChecklistItem], tz: Option<Tz>) -> String {
         let mut lines = vec![
             format!("**ID:** {}", self.id),
             format!("**Title:** {}", self.title),
@@ -122,14 +172,14 @@ impl Task {
             }
         }
         if let Some(ref v) = self.start {
-            lines.push(format!("**Date:** {}", format_date(v)));
+            lines.push(format!("**Date:** {}", format_date(v, tz)));
             lines.push(format!(
                 "**Duration:** {}",
-                format_duration(v, self.use_time, self.time_length)
+                format_duration(v, self.use_time, self.time_length, tz)
             ));
         }
         if let Some(ref v) = self.deadline {
-            lines.push(format!("**Deadline:** {}", format_date(v)));
+            lines.push(format!("**Deadline:** {}", format_date(v, tz)));
         }
         lines.push(format!(
             "**Completed:** {}",
@@ -156,7 +206,7 @@ impl Task {
         lines.join("\n")
     }
 
-    pub fn display_list_item(&self, checklist: &[ChecklistItem]) -> String {
+    pub fn display_list_item(&self, checklist: &[ChecklistItem], tz: Option<Tz>) -> String {
         let mut lines = vec![
             format!("- ID: {}", self.id),
             format!("  Task: {}", self.title),
@@ -172,14 +222,14 @@ impl Task {
             }
         }
         if let Some(ref v) = self.start {
-            lines.push(format!("  Date: {}", format_date(v)));
+            lines.push(format!("  Date: {}", format_date(v, tz)));
             lines.push(format!(
                 "  Duration: {}",
-                format_duration(v, self.use_time, self.time_length)
+                format_duration(v, self.use_time, self.time_length, tz)
             ));
         }
         if let Some(ref v) = self.deadline {
-            lines.push(format!("  Deadline: {}", format_date(v)));
+            lines.push(format!("  Deadline: {}", format_date(v, tz)));
         }
         lines.push(format!("  Completed: {}", display_completed(&self.checked)));
         lines.push(format!("  Priority: {}", display_priority(&self.priority)));
@@ -326,27 +376,51 @@ mod tests {
 
     #[test]
     fn format_date_iso8601() {
-        assert_eq!(format_date("2026-02-27T09:00:00Z"), "Fri, Feb 27, 2026");
+        assert_eq!(
+            format_date("2026-02-27T09:00:00Z", None),
+            "Fri, Feb 27, 2026"
+        );
     }
 
     #[test]
     fn format_date_with_fractional_seconds() {
-        assert_eq!(format_date("2026-02-27T09:00:00.000Z"), "Fri, Feb 27, 2026");
+        assert_eq!(
+            format_date("2026-02-27T09:00:00.000Z", None),
+            "Fri, Feb 27, 2026"
+        );
     }
 
     #[test]
     fn format_date_invalid_fallback() {
-        assert_eq!(format_date("not-a-date"), "not-a-date");
+        assert_eq!(format_date("not-a-date", None), "not-a-date");
+    }
+
+    #[test]
+    fn format_date_with_timezone() {
+        let tz: Tz = "Europe/Kyiv".parse().unwrap();
+        // 23:00 UTC = 01:00 next day in Kyiv (UTC+2 in winter)
+        assert_eq!(
+            format_date("2026-02-27T23:00:00Z", Some(tz)),
+            "Sat, Feb 28, 2026"
+        );
+    }
+
+    #[test]
+    fn format_date_without_timezone_unchanged() {
+        assert_eq!(
+            format_date("2026-02-27T23:00:00Z", None),
+            "Fri, Feb 27, 2026"
+        );
     }
 
     #[test]
     fn format_duration_all_day() {
         assert_eq!(
-            format_duration("2026-02-27T09:00:00Z", Some(false), Some(0)),
+            format_duration("2026-02-27T09:00:00Z", Some(false), Some(0), None),
             "All Day"
         );
         assert_eq!(
-            format_duration("2026-02-27T09:00:00Z", None, None),
+            format_duration("2026-02-27T09:00:00Z", None, None, None),
             "All Day"
         );
     }
@@ -354,21 +428,65 @@ mod tests {
     #[test]
     fn format_duration_with_time_range() {
         assert_eq!(
-            format_duration("2026-02-27T09:00:00Z", Some(true), Some(90)),
+            format_duration("2026-02-27T09:00:00Z", Some(true), Some(90), None),
             "09:00 - 10:30"
+        );
+    }
+
+    #[test]
+    fn format_duration_with_timezone() {
+        let tz: Tz = "Europe/Kyiv".parse().unwrap();
+        // 09:00 UTC = 11:00 Kyiv (UTC+2)
+        assert_eq!(
+            format_duration("2026-02-27T09:00:00Z", Some(true), Some(90), Some(tz)),
+            "11:00 - 12:30"
         );
     }
 
     #[test]
     fn format_duration_open_ended() {
         assert_eq!(
-            format_duration("2026-02-27T09:00:00Z", Some(true), Some(0)),
+            format_duration("2026-02-27T09:00:00Z", Some(true), Some(0), None),
             "09:00 - ..."
         );
         assert_eq!(
-            format_duration("2026-02-27T09:00:00Z", Some(true), None),
+            format_duration("2026-02-27T09:00:00Z", Some(true), None, None),
             "09:00 - ..."
         );
+    }
+
+    #[test]
+    fn convert_date_filter_start_with_timezone() {
+        let tz: Tz = "Europe/Kyiv".parse().unwrap();
+        // Kyiv is UTC+2 in winter, so 2026-02-28T00:00:00+02:00 = 2026-02-27T22:00:00Z
+        let result = convert_date_filter("2026-02-28", false, Some(tz)).unwrap();
+        assert_eq!(result, "2026-02-27T22:00:00Z");
+    }
+
+    #[test]
+    fn convert_date_filter_end_with_timezone() {
+        let tz: Tz = "Europe/Kyiv".parse().unwrap();
+        let result = convert_date_filter("2026-02-28", true, Some(tz)).unwrap();
+        assert_eq!(result, "2026-02-28T21:59:59Z");
+    }
+
+    #[test]
+    fn convert_date_filter_without_timezone() {
+        let result = convert_date_filter("2026-02-28", false, None).unwrap();
+        assert_eq!(result, "2026-02-28T00:00:00Z");
+        let result = convert_date_filter("2026-02-28", true, None).unwrap();
+        assert_eq!(result, "2026-02-28T23:59:59Z");
+    }
+
+    #[test]
+    fn convert_date_filter_passthrough_full_iso() {
+        let result = convert_date_filter("2026-02-28T00:00:00Z", false, None).unwrap();
+        assert_eq!(result, "2026-02-28T00:00:00Z");
+    }
+
+    #[test]
+    fn convert_date_filter_invalid_date() {
+        assert!(convert_date_filter("not-a-date", false, None).is_err());
     }
 
     #[test]
