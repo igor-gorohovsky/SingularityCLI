@@ -44,13 +44,17 @@ singularity project delete <P-uuid>
 ### Tasks
 
 ```bash
-singularity task list [--project-id P-uuid] [--parent T-uuid] [--start-from 2025-01-01] [--start-to 2025-12-31] [--max-count N] [--offset N] [--include-removed] [--include-archived]
+singularity task list [today|tomorrow|yesterday|week|month] [--project-id P-uuid] [--parent T-uuid] [--start-from 2025-01-01] [--start-to 2025-12-31] [--max-count N] [--offset N] [--include-removed] [--include-archived]
 singularity task get <T-uuid>
-singularity task create --title "My Task" [--note "..."] [--priority high|normal|low] [--project-id P-uuid] [--parent T-uuid] [--group Q-uuid] [--deadline 2025-06-01] [--start 2025-01-01] [--tags tag1,tag2]
+singularity task create "My Task" [--note "..."] [--priority high|normal|low] [--project-id P-uuid] [--parent T-uuid] [--group Q-uuid] [--deadline 2025-06-01] [--start 2025-01-01] [--tags tag1,tag2]
 singularity task update <T-uuid> [--title "..."] [--note "..."] [--priority high|normal|low] [--checked empty|checked|cancelled] [--project-id P-uuid] [--parent T-uuid] [--group Q-uuid] [--deadline ...] [--start ...] [--tags tag1,tag2]
+singularity task done <T-uuid>
+singularity task cancel <T-uuid>
+singularity task reopen <T-uuid>
 singularity task delete <T-uuid>
 ```
 
+Date keywords: `today`, `tomorrow`, `yesterday`, `week`, `month` — cannot be combined with `--start-from`/`--start-to`.
 Priority values: `high`, `normal`, `low`
 Checked values: `empty` (not done), `checked` (completed), `cancelled`
 
@@ -82,13 +86,18 @@ singularity tag delete <tag-id>
 ```bash
 singularity project create --title "Sprint 1"
 # note the returned P-uuid
-singularity task create --title "Design API" --project-id P-xxx --priority high
-singularity task create --title "Implement endpoints" --project-id P-xxx --priority normal
+singularity task create "Design API" --project-id P-xxx --priority high
+singularity task create "Implement endpoints" --project-id P-xxx --priority normal
 ```
 
 ### Complete a task
 ```bash
-singularity task update T-xxx --checked checked
+singularity task done T-xxx
+```
+
+### List today's tasks in a project
+```bash
+singularity task list today --project-id P-xxx
 ```
 
 ### List all tasks in a project

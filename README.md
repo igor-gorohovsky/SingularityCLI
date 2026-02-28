@@ -17,7 +17,7 @@ It works great for humans too, of course.
 1. Install: `cargo install singularity-cli`
 2. Run `singularity setup` to configure API token and timezone (or `singularity config set-token <TOKEN>` + `singularity config set-timezone Europe/Kyiv`)
 3. Copy `.claude/skills/singularity.md` to your project's `.claude/skills/` directory
-4. Your agent can now run commands like `singularity task create --title "Fix bug" --priority high`
+4. Your agent can now run commands like `singularity task create "Fix bug" --priority high`
 
 Use `--json` on any command for machine-readable output that agents can parse programmatically.
 
@@ -46,13 +46,16 @@ singularity setup
 singularity project list
 
 # Create a task
-singularity task create --title "Review PR" --priority high --project-id P-xxx
+singularity task create "Review PR" --priority high --project-id P-xxx
+
+# Today's tasks
+singularity task list today
+
+# This week's tasks
+singularity task list week
 
 # Complete a task
-singularity task update T-xxx --checked checked
-
-# Get today's tasks (uses your configured timezone for correct date boundaries)
-singularity task list --start-from 2026-01-01 --start-to 2026-01-01
+singularity task done T-xxx
 ```
 
 ## Configuration
@@ -93,10 +96,13 @@ singularity project delete <P-uuid>
 ### Tasks
 
 ```bash
-singularity task list [--project-id P-uuid] [--parent T-uuid] [--start-from DATE] [--start-to DATE] [--max-count N] [--offset N] [--include-removed] [--include-archived]
+singularity task list [today|tomorrow|yesterday|week|month] [--project-id P-uuid] [--parent T-uuid] [--start-from DATE] [--start-to DATE] [--max-count N] [--offset N] [--include-removed] [--include-archived]
 singularity task get <T-uuid>
-singularity task create --title "My Task" [--priority high|normal|low] [--project-id P-uuid] [--deadline DATE] [--tags tag1,tag2] ...
+singularity task create "My Task" [--priority high|normal|low] [--project-id P-uuid] [--deadline DATE] [--tags tag1,tag2] ...
 singularity task update <T-uuid> [--checked empty|checked|cancelled] [--priority high|normal|low] [--title "..."] ...
+singularity task done <T-uuid>
+singularity task cancel <T-uuid>
+singularity task reopen <T-uuid>
 singularity task delete <T-uuid>
 ```
 

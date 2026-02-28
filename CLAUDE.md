@@ -44,7 +44,7 @@ cargo clippy -D warnings # Lint
 
 ## API Resources (currently supported)
 
-Projects (`P-<uuid>`), Tasks (`T-<uuid>`), Task Groups (`Q-<uuid>`), Tags — each with full CRUD.
+Projects (`P-<uuid>`), Tasks (`T-<uuid>`), Task Groups (`Q-<uuid>`), Tags — each with full CRUD. Tasks also have shortcuts: `done`/`cancel`/`reopen` for quick status changes, date keywords (`today`/`tomorrow`/`yesterday`/`week`/`month`) for `task list`, and positional title for `task create`.
 
 ## Auth & Config
 
