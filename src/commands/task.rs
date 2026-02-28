@@ -5,7 +5,17 @@ use clap::{Subcommand, ValueEnum};
 use crate::client::ApiClient;
 use crate::models::task::{
     ChecklistItemListResponse, Task, TaskCreate, TaskListResponse, TaskUpdate, convert_date_filter,
+    resolve_date_keyword,
 };
+
+#[derive(Clone, ValueEnum)]
+pub enum DateKeyword {
+    Today,
+    Tomorrow,
+    Yesterday,
+    Week,
+    Month,
+}
 
 #[derive(Clone, ValueEnum)]
 pub enum Priority {
@@ -45,6 +55,8 @@ impl CheckedStatus {
 pub enum TaskCmd {
     #[command(about = "List tasks with optional filters")]
     List {
+        #[arg(value_enum, help = "Date shortcut: today, tomorrow, yesterday, week, month")]
+        date: Option<DateKeyword>,
         #[arg(long, help = "Filter by project ID (P-<uuid>)")]
         project_id: Option<String>,
         #[arg(long, help = "Filter by parent task ID (T-<uuid>)")]
@@ -75,7 +87,7 @@ pub enum TaskCmd {
     },
     #[command(about = "Create a new task")]
     Create {
-        #[arg(long, help = "Task title (required)")]
+        #[arg(help = "Task title")]
         title: String,
         #[arg(long, help = "Task description/notes")]
         note: Option<String>,
@@ -93,6 +105,21 @@ pub enum TaskCmd {
         start: Option<String>,
         #[arg(long, value_delimiter = ',', help = "Comma-separated tag IDs")]
         tags: Option<Vec<String>>,
+    },
+    #[command(about = "Mark a task as completed")]
+    Done {
+        #[arg(help = "Task ID (T-<uuid> format)")]
+        id: String,
+    },
+    #[command(about = "Mark a task as cancelled")]
+    Cancel {
+        #[arg(help = "Task ID (T-<uuid> format)")]
+        id: String,
+    },
+    #[command(about = "Reopen a task (uncheck)")]
+    Reopen {
+        #[arg(help = "Task ID (T-<uuid> format)")]
+        id: String,
     },
     #[command(about = "Update an existing task (only specified fields are changed)")]
     Update {
@@ -137,6 +164,7 @@ pub enum TaskCmd {
 pub fn run(client: &ApiClient, cmd: TaskCmd, json: bool, tz: Option<Tz>) -> Result<()> {
     match cmd {
         TaskCmd::List {
+            date,
             project_id,
             parent,
             start_from,
@@ -146,6 +174,22 @@ pub fn run(client: &ApiClient, cmd: TaskCmd, json: bool, tz: Option<Tz>) -> Resu
             include_removed,
             include_archived,
         } => {
+            if date.is_some() && (start_from.is_some() || start_to.is_some()) {
+                anyhow::bail!("cannot use date keyword with --start-from/--start-to");
+            }
+            let (resolved_from, resolved_to) = if let Some(ref keyword) = date {
+                let keyword_str = match keyword {
+                    DateKeyword::Today => "today",
+                    DateKeyword::Tomorrow => "tomorrow",
+                    DateKeyword::Yesterday => "yesterday",
+                    DateKeyword::Week => "week",
+                    DateKeyword::Month => "month",
+                };
+                let (f, t) = resolve_date_keyword(keyword_str, tz)?;
+                (Some(f), Some(t))
+            } else {
+                (start_from, start_to)
+            };
             let mut query: Vec<(&str, String)> = Vec::new();
             if let Some(ref v) = project_id {
                 query.push(("projectId", v.to_string()));
@@ -153,10 +197,10 @@ pub fn run(client: &ApiClient, cmd: TaskCmd, json: bool, tz: Option<Tz>) -> Resu
             if let Some(ref v) = parent {
                 query.push(("parent", v.to_string()));
             }
-            if let Some(ref v) = start_from {
+            if let Some(ref v) = resolved_from {
                 query.push(("startDateFrom", convert_date_filter(v, false, tz)?));
             }
-            if let Some(ref v) = start_to {
+            if let Some(ref v) = resolved_to {
                 query.push(("startDateTo", convert_date_filter(v, true, tz)?));
             }
             if let Some(v) = max_count {
@@ -267,6 +311,30 @@ pub fn run(client: &ApiClient, cmd: TaskCmd, json: bool, tz: Option<Tz>) -> Resu
         TaskCmd::Delete { id } => {
             client.delete(&format!("/v2/task/{}", id))?;
             println!("Deleted task {}", id);
+        }
+        TaskCmd::Done { id } => {
+            let data = TaskUpdate {
+                checked: Some(CheckedStatus::Checked.as_i32()),
+                ..Default::default()
+            };
+            let task: Task = client.patch(&format!("/v2/task/{}", id), &data)?;
+            println!("Completed task {}", task.id);
+        }
+        TaskCmd::Cancel { id } => {
+            let data = TaskUpdate {
+                checked: Some(CheckedStatus::Cancelled.as_i32()),
+                ..Default::default()
+            };
+            let task: Task = client.patch(&format!("/v2/task/{}", id), &data)?;
+            println!("Cancelled task {}", task.id);
+        }
+        TaskCmd::Reopen { id } => {
+            let data = TaskUpdate {
+                checked: Some(CheckedStatus::Empty.as_i32()),
+                ..Default::default()
+            };
+            let task: Task = client.patch(&format!("/v2/task/{}", id), &data)?;
+            println!("Reopened task {}", task.id);
         }
     }
     Ok(())

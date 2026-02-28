@@ -1,4 +1,4 @@
-use chrono::{NaiveDate, NaiveDateTime, TimeZone, Utc};
+use chrono::{Datelike, NaiveDate, NaiveDateTime, TimeZone, Utc};
 use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
 
@@ -126,6 +126,50 @@ fn format_duration(
     }
 }
 
+pub fn resolve_date_keyword(keyword: &str, tz: Option<Tz>) -> anyhow::Result<(String, String)> {
+    let now = Utc::now();
+    let today = match tz {
+        Some(tz) => now.with_timezone(&tz).date_naive(),
+        None => now.date_naive(),
+    };
+    resolve_date_keyword_from(keyword, today)
+}
+
+fn resolve_date_keyword_from(
+    keyword: &str,
+    today: NaiveDate,
+) -> anyhow::Result<(String, String)> {
+    let (from, to) = match keyword {
+        "today" => (today, today),
+        "tomorrow" => {
+            let d = today + chrono::Duration::days(1);
+            (d, d)
+        }
+        "yesterday" => {
+            let d = today - chrono::Duration::days(1);
+            (d, d)
+        }
+        "week" => (today, today + chrono::Duration::days(6)),
+        "month" => {
+            let first = today.with_day(1).unwrap();
+            let last = if today.month() == 12 {
+                NaiveDate::from_ymd_opt(today.year() + 1, 1, 1).unwrap()
+            } else {
+                NaiveDate::from_ymd_opt(today.year(), today.month() + 1, 1).unwrap()
+            } - chrono::Duration::days(1);
+            (first, last)
+        }
+        _ => anyhow::bail!(
+            "unknown date keyword '{}'. Use: today, tomorrow, yesterday, week, month",
+            keyword
+        ),
+    };
+    Ok((
+        from.format("%Y-%m-%d").to_string(),
+        to.format("%Y-%m-%d").to_string(),
+    ))
+}
+
 pub fn convert_date_filter(value: &str, is_end: bool, tz: Option<Tz>) -> anyhow::Result<String> {
     if value.contains('T') {
         return Ok(value.to_string());
@@ -135,7 +179,9 @@ pub fn convert_date_filter(value: &str, is_end: bool, tz: Option<Tz>) -> anyhow:
     let naive_dt = if is_end {
         naive_date.and_hms_opt(23, 59, 59).unwrap()
     } else {
-        naive_date.and_hms_opt(0, 0, 0).unwrap()
+        (naive_date - chrono::Duration::days(1))
+            .and_hms_opt(23, 59, 59)
+            .unwrap()
     };
     match tz {
         Some(tz) => {
@@ -147,11 +193,14 @@ pub fn convert_date_filter(value: &str, is_end: bool, tz: Option<Tz>) -> anyhow:
                 .format("%Y-%m-%dT%H:%M:%SZ")
                 .to_string())
         }
-        None => Ok(format!(
-            "{}T{}Z",
-            value,
-            if is_end { "23:59:59" } else { "00:00:00" }
-        )),
+        None => {
+            if is_end {
+                Ok(format!("{}T23:59:59Z", value))
+            } else {
+                let prev = naive_date - chrono::Duration::days(1);
+                Ok(format!("{}T23:59:59Z", prev.format("%Y-%m-%d")))
+            }
+        }
     }
 }
 
@@ -458,9 +507,10 @@ mod tests {
     #[test]
     fn convert_date_filter_start_with_timezone() {
         let tz: Tz = "Europe/Kyiv".parse().unwrap();
-        // Kyiv is UTC+2 in winter, so 2026-02-28T00:00:00+02:00 = 2026-02-27T22:00:00Z
+        // API uses strict >, so we send previous day 23:59:59 local → UTC
+        // 2026-02-27T23:59:59+02:00 = 2026-02-27T21:59:59Z
         let result = convert_date_filter("2026-02-28", false, Some(tz)).unwrap();
-        assert_eq!(result, "2026-02-27T22:00:00Z");
+        assert_eq!(result, "2026-02-27T21:59:59Z");
     }
 
     #[test]
@@ -473,7 +523,7 @@ mod tests {
     #[test]
     fn convert_date_filter_without_timezone() {
         let result = convert_date_filter("2026-02-28", false, None).unwrap();
-        assert_eq!(result, "2026-02-28T00:00:00Z");
+        assert_eq!(result, "2026-02-27T23:59:59Z");
         let result = convert_date_filter("2026-02-28", true, None).unwrap();
         assert_eq!(result, "2026-02-28T23:59:59Z");
     }
@@ -510,5 +560,67 @@ mod tests {
         assert_eq!(resp.checklist_items.len(), 1);
         assert!(resp.checklist_items[0].done.is_none());
         assert!(resp.checklist_items[0].parent_order.is_none());
+    }
+
+    #[test]
+    fn resolve_date_keyword_today() {
+        let today = NaiveDate::from_ymd_opt(2026, 3, 15).unwrap();
+        let (from, to) = resolve_date_keyword_from("today", today).unwrap();
+        assert_eq!(from, "2026-03-15");
+        assert_eq!(to, "2026-03-15");
+    }
+
+    #[test]
+    fn resolve_date_keyword_tomorrow() {
+        let today = NaiveDate::from_ymd_opt(2026, 3, 15).unwrap();
+        let (from, to) = resolve_date_keyword_from("tomorrow", today).unwrap();
+        assert_eq!(from, "2026-03-16");
+        assert_eq!(to, "2026-03-16");
+    }
+
+    #[test]
+    fn resolve_date_keyword_yesterday() {
+        let today = NaiveDate::from_ymd_opt(2026, 3, 15).unwrap();
+        let (from, to) = resolve_date_keyword_from("yesterday", today).unwrap();
+        assert_eq!(from, "2026-03-14");
+        assert_eq!(to, "2026-03-14");
+    }
+
+    #[test]
+    fn resolve_date_keyword_week() {
+        let today = NaiveDate::from_ymd_opt(2026, 3, 15).unwrap();
+        let (from, to) = resolve_date_keyword_from("week", today).unwrap();
+        assert_eq!(from, "2026-03-15");
+        assert_eq!(to, "2026-03-21");
+    }
+
+    #[test]
+    fn resolve_date_keyword_month() {
+        let today = NaiveDate::from_ymd_opt(2026, 3, 15).unwrap();
+        let (from, to) = resolve_date_keyword_from("month", today).unwrap();
+        assert_eq!(from, "2026-03-01");
+        assert_eq!(to, "2026-03-31");
+    }
+
+    #[test]
+    fn resolve_date_keyword_month_february() {
+        let today = NaiveDate::from_ymd_opt(2026, 2, 10).unwrap();
+        let (from, to) = resolve_date_keyword_from("month", today).unwrap();
+        assert_eq!(from, "2026-02-01");
+        assert_eq!(to, "2026-02-28");
+    }
+
+    #[test]
+    fn resolve_date_keyword_month_december() {
+        let today = NaiveDate::from_ymd_opt(2026, 12, 5).unwrap();
+        let (from, to) = resolve_date_keyword_from("month", today).unwrap();
+        assert_eq!(from, "2026-12-01");
+        assert_eq!(to, "2026-12-31");
+    }
+
+    #[test]
+    fn resolve_date_keyword_invalid() {
+        let today = NaiveDate::from_ymd_opt(2026, 3, 15).unwrap();
+        assert!(resolve_date_keyword_from("invalid", today).is_err());
     }
 }
