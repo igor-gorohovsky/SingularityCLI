@@ -135,10 +135,7 @@ pub fn resolve_date_keyword(keyword: &str, tz: Option<Tz>) -> anyhow::Result<(St
     resolve_date_keyword_from(keyword, today)
 }
 
-fn resolve_date_keyword_from(
-    keyword: &str,
-    today: NaiveDate,
-) -> anyhow::Result<(String, String)> {
+fn resolve_date_keyword_from(keyword: &str, today: NaiveDate) -> anyhow::Result<(String, String)> {
     let (from, to) = match keyword {
         "today" => (today, today),
         "tomorrow" => {

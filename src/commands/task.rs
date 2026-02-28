@@ -55,7 +55,10 @@ impl CheckedStatus {
 pub enum TaskCmd {
     #[command(about = "List tasks with optional filters")]
     List {
-        #[arg(value_enum, help = "Date shortcut: today, tomorrow, yesterday, week, month")]
+        #[arg(
+            value_enum,
+            help = "Date shortcut: today, tomorrow, yesterday, week, month"
+        )]
         date: Option<DateKeyword>,
         #[arg(long, help = "Filter by project ID (P-<uuid>)")]
         project_id: Option<String>,
